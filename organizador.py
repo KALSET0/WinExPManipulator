@@ -1,5 +1,6 @@
 import os
 import re
+import shutil
 import tkinter as tk
 from tkinter import messagebox, ttk, simpledialog
 import threading
@@ -177,7 +178,7 @@ def abrir_elemento(ruta, entrada_ruta, texto_salida):
 def renombrar_elemento(ruta, entrada_ruta, texto_salida):
     """Renombra un archivo o carpeta dentro de la ruta base actual."""
     if not ruta:
-        messagebox.showwarning("Ruta vacía", "Ingresa la ruta del elemento a renombrar.")
+        messagebox.showwarning("Ruta vacía", "Ingresa el elemento a renombrar.")
         return
 
     if not os.path.isabs(ruta):
@@ -215,12 +216,41 @@ def renombrar_elemento(ruta, entrada_ruta, texto_salida):
         messagebox.showerror("Error al renombrar", f"No se pudo renombrar: {str(e)}")
 
 
-def eliminar_elemento(ruta):
-    """Placeholder para eliminar un archivo o carpeta."""
+def eliminar_elemento(ruta, entrada_ruta, texto_salida):
+    """Elimina un archivo o carpeta, confirmando antes la acción."""
     if not ruta:
-        messagebox.showwarning("Ruta vacía", "Ingresa la ruta del elemento a eliminar.")
+        messagebox.showwarning("Ruta vacía", "Ingresa el elemento a eliminar.")
         return
-    messagebox.showinfo("Función pendiente", f"Eliminar: {ruta}")
+
+    if not os.path.isabs(ruta):
+        ruta_base = entrada_ruta.get().strip()
+        ruta_completa = os.path.join(ruta_base, ruta) if ruta_base else ruta
+    else:
+        ruta_completa = ruta
+
+    ruta_completa = os.path.abspath(ruta_completa)
+
+    if not os.path.exists(ruta_completa):
+        messagebox.showerror("Ruta no encontrada", f"La ruta '{ruta_completa}' no existe.")
+        return
+
+    nombre_elemento = os.path.basename(ruta_completa)
+    if not messagebox.askyesno("Confirmar eliminación", f"¿Eliminar '{nombre_elemento}'?"):
+        return
+
+    try:
+        if os.path.isdir(ruta_completa):
+            shutil.rmtree(ruta_completa)
+        else:
+            os.remove(ruta_completa)
+
+        messagebox.showinfo("Éxito", f"Elemento eliminado: {nombre_elemento}")
+        carpeta_actual = os.path.dirname(ruta_completa)
+        entrada_ruta.delete(0, tk.END)
+        entrada_ruta.insert(0, carpeta_actual)
+        listar_archivos(carpeta_actual, texto_salida)
+    except Exception as e:
+        messagebox.showerror("Error al eliminar", f"No se pudo eliminar: {str(e)}")
 
 
 def copiar_elemento(ruta):
@@ -336,7 +366,7 @@ if __name__ == "__main__":
         acciones_frame,
         text="Eliminar",
         font=("Segoe UI", 10),
-        command=lambda: eliminar_elemento(entrada_seleccion.get().strip()),
+        command=lambda: eliminar_elemento(entrada_seleccion.get().strip(), entrada_ruta, texto_salida),
         bg="#D32F2F",
         fg="white",
         activebackground="#C62828",
