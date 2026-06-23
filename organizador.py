@@ -6,6 +6,7 @@ from tkinter import messagebox, ttk, simpledialog
 import threading
 from queue import Queue
 
+#Variables globales para el portapapeles y el historial de rutas
 copy_buffer = []
 clipboard_action = None
 ruta_historial = []
