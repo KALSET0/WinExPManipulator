@@ -8,6 +8,7 @@ from queue import Queue
 
 copy_buffer = []
 clipboard_action = None
+ruta_historial = []
 
 
 def buscar_en_hilo(ruta_acceso, termino, cola_actualizacion, cola_resultados):
@@ -149,6 +150,37 @@ def buscar_por_nombre(ruta_acceso, termino, texto_salida, barra_progreso):
     # Iniciar monitoreo desde el hilo principal
     ventana = texto_salida.winfo_toplevel()
     monitorear_cola(ventana, cola_actualizacion, cola_resultados, barra_progreso, texto_salida, hilo)
+
+
+def cargar_ruta(ruta_acceso, entrada_ruta, texto_salida, listbox, agregar_al_historial=True):
+    ruta_acceso = ruta_acceso.strip()
+    if not ruta_acceso:
+        messagebox.showwarning("Ruta vacía", "Ingresa una ruta válida para cargar.")
+        return
+
+    if not os.path.exists(ruta_acceso):
+        messagebox.showerror("Error de ruta", f"La ruta '{ruta_acceso}' no existe. Verifica que esté bien escrita.")
+        return
+
+    ruta_actual = entrada_ruta.get().strip()
+    if agregar_al_historial and ruta_actual and ruta_actual != ruta_acceso and os.path.exists(ruta_actual):
+        ruta_historial.append(ruta_actual)
+
+    entrada_ruta.delete(0, tk.END)
+    entrada_ruta.insert(0, ruta_acceso)
+    listar_archivos(ruta_acceso, texto_salida, listbox)
+
+
+def regresar_ruta_anterior(entrada_ruta, texto_salida, listbox):
+    global ruta_historial
+    if not ruta_historial:
+        messagebox.showinfo("Historial vacío", "No hay rutas anteriores para regresar.")
+        return
+
+    ruta_anterior = ruta_historial.pop()
+    entrada_ruta.delete(0, tk.END)
+    entrada_ruta.insert(0, ruta_anterior)
+    listar_archivos(ruta_anterior, texto_salida, listbox)
 
 
 def seleccionar_elementos(listbox, entrada_ruta):
@@ -318,9 +350,7 @@ def abrir_elemento(ruta, entrada_ruta, texto_salida, listbox=None):
     try:
         # Si es una carpeta, cargarla en la interfaz
         if os.path.isdir(ruta_completa):
-            entrada_ruta.delete(0, tk.END)
-            entrada_ruta.insert(0, ruta_completa)
-            listar_archivos(ruta_completa, texto_salida, listbox)
+            cargar_ruta(ruta_completa, entrada_ruta, texto_salida, listbox)
         else:
             # Si es un archivo, abrirlo con la aplicación predeterminada
             os.startfile(ruta_completa)
@@ -432,7 +462,7 @@ if __name__ == "__main__":
         boton_frame,
         text="Listar carpeta",
         font=("Segoe UI", 10, "bold"),
-        command=lambda: listar_archivos(entrada_ruta.get().strip(), texto_salida, listbox),
+        command=lambda: cargar_ruta(entrada_ruta.get().strip(), entrada_ruta, texto_salida, listbox),
         bg="#4CAF50",
         fg="white",
         activebackground="#45A049",
@@ -453,6 +483,19 @@ if __name__ == "__main__":
         pady=8,
     )
     boton_buscar.grid(row=0, column=1, padx=6)
+
+    boton_atras = tk.Button(
+        boton_frame,
+        text="Atrás",
+        font=("Segoe UI", 10, "bold"),
+        command=lambda: regresar_ruta_anterior(entrada_ruta, texto_salida, listbox),
+        bg="#9E9E9E",
+        fg="white",
+        activebackground="#757575",
+        padx=14,
+        pady=8,
+    )
+    boton_atras.grid(row=0, column=2, padx=6)
 
     barra_progreso = ttk.Progressbar(ventana, mode='determinate', length=600)
     barra_progreso.pack(padx=20, pady=(10, 8), fill=tk.X)
