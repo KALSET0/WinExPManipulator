@@ -526,22 +526,23 @@ if __name__ == "__main__":
     """Función principal que inicia la interfaz gráfica"""
     ventana = tk.Tk()
     ventana.title("Organizador de Archivos")
-    ventana.geometry("660x750")
+    ventana.geometry("860x950")
     ventana.resizable(False, False)
+    ventana.configure(bg="#2b2b2b")
 
-    etiqueta_ruta = tk.Label(ventana, text="Ruta de acceso:", font=("Segoe UI", 11))
+    etiqueta_ruta = tk.Label(ventana, text="Ruta de acceso:", font=("Segoe UI", 11), bg="#2b2b2b", fg="white")
     etiqueta_ruta.pack(pady=(20, 4), padx=20, anchor="w")
 
-    entrada_ruta = tk.Entry(ventana, width=80, font=("Segoe UI", 10))
+    entrada_ruta = tk.Entry(ventana, width=80, font=("Segoe UI", 10), bg="#333333", fg="white", insertbackground="white")
     entrada_ruta.pack(padx=20)
 
-    etiqueta_busqueda = tk.Label(ventana, text="Buscar por nombre:", font=("Segoe UI", 11))
+    etiqueta_busqueda = tk.Label(ventana, text="Buscar por nombre:", font=("Segoe UI", 11), bg="#2b2b2b", fg="white")
     etiqueta_busqueda.pack(pady=(16, 4), padx=20, anchor="w")
 
-    entrada_busqueda = tk.Entry(ventana, width=80, font=("Segoe UI", 10))
+    entrada_busqueda = tk.Entry(ventana, width=80, font=("Segoe UI", 10), bg="#333333", fg="white", insertbackground="white")
     entrada_busqueda.pack(padx=20)
 
-    boton_frame = tk.Frame(ventana)
+    boton_frame = tk.Frame(ventana, bg="#2b2b2b")
     boton_frame.pack(pady=14)
 
     boton_listar = tk.Button(
@@ -605,14 +606,14 @@ if __name__ == "__main__":
     barra_progreso.pack(padx=20, pady=(10, 8), fill=tk.X)
 
     #Etiqueta para mostrar el contenido de la carpeta
-    etiqueta_contenido = tk.Label(ventana, text="Contenido de la carpeta:", font=("Segoe UI", 11))
+    etiqueta_contenido = tk.Label(ventana, text="Contenido de la carpeta:", font=("Segoe UI", 11), bg="#2b2b2b", fg="white")
     etiqueta_contenido.pack(pady=(10, 4), padx=20, anchor="w")
 
     #listbox para mostrar los archivos y carpetas encontrados
-    listbox_frame = tk.Frame(ventana)
+    listbox_frame = tk.Frame(ventana, bg="#2b2b2b")
     listbox_frame.pack(padx=20, fill=tk.BOTH, expand=False)
 
-    listbox = tk.Listbox(listbox_frame, selectmode=tk.EXTENDED, width=80, height=12, font=("Segoe UI", 10))
+    listbox = tk.Listbox(listbox_frame, selectmode=tk.EXTENDED, width=80, height=12, font=("Segoe UI", 10), bg="#1e1e1e", fg="white", selectbackground="#555555", selectforeground="white")
     listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
     #Scrollbar para el listbox
@@ -621,11 +622,11 @@ if __name__ == "__main__":
     listbox.config(yscrollcommand=scrollbar_list.set)
 
     #Etiqueta de información sobre la selección múltiple
-    info_label = tk.Label(ventana, text="Usa Ctrl o Shift para seleccionar varios elementos.", font=("Segoe UI", 9), fg="#555")
+    info_label = tk.Label(ventana, text="Usa Ctrl o Shift para seleccionar varios elementos.", font=("Segoe UI", 9), fg="#ddd", bg="#2b2b2b")
     info_label.pack(padx=20, anchor="w")
 
     #Frame para los botones de acciones (abrir, renombrar, eliminar, copiar, cortar, pegar, nueva carpeta)
-    acciones_frame = tk.Frame(ventana)
+    acciones_frame = tk.Frame(ventana, bg="#2b2b2b")
     acciones_frame.pack(pady=10)
 
     """Botones de acciones"""
@@ -724,7 +725,7 @@ if __name__ == "__main__":
     listbox.bind('<Double-Button-1>', lambda event: abrir_elemento_from_list(listbox, entrada_ruta, texto_salida))
     
     #Etiqueta para mostrar los resultados de la búsqueda o mensajes de estado
-    texto_salida = tk.Text(ventana, width=78, height=14, font=("Consolas", 10), state="disabled", wrap="word")
+    texto_salida = tk.Text(ventana, width=78, height=24, font=("Consolas", 10), bg="#121212", fg="#e0e0e0", insertbackground="white", state="disabled", wrap="word")
     texto_salida.pack(padx=20, pady=(0, 10))
 
     #Scrollbar para el texto de salida
