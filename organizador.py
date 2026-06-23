@@ -527,6 +527,18 @@ if __name__ == "__main__":
     """Función principal que inicia la interfaz gráfica"""
     ventana = tk.Tk()
     ventana.title("Organizador de Archivos")
+
+    #Cargar el icono de la aplicación si está disponible
+    try:
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+        icon_path = os.path.join(app_dir, "icons8-cricket-64.png")
+        if os.path.exists(icon_path):
+            _icon_img = tk.PhotoImage(file=icon_path)
+            ventana.iconphoto(True, _icon_img)
+    except Exception:
+        # No bloquear la aplicación si el icono falla
+        pass
+
     ventana.geometry("860x950")
     ventana.resizable(False, False)
     ventana.configure(bg="#2b2b2b")
