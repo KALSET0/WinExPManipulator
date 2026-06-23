@@ -154,6 +154,7 @@ def buscar_por_nombre(ruta_acceso, termino, texto_salida, barra_progreso):
 
 
 def obtener_unidades_windows():
+    """Obtiene las unidades de disco disponibles."""
     try:
         import string
         drives = []
@@ -169,6 +170,7 @@ def obtener_unidades_windows():
 
 def mostrar_this_pc(texto_salida, listbox, entrada_ruta, agregar_al_historial=True):
     global ruta_historial
+    """Muestra las unidades de disco disponibles en Windows."""
     if agregar_al_historial:
         ruta_actual = entrada_ruta.get().strip()
         if ruta_actual and ruta_actual != MOSTRAR_PC and os.path.exists(ruta_actual):
@@ -189,6 +191,7 @@ def mostrar_this_pc(texto_salida, listbox, entrada_ruta, agregar_al_historial=Tr
 
 def cargar_ruta(ruta_acceso, entrada_ruta, texto_salida, listbox, agregar_al_historial=True):
     ruta_acceso = ruta_acceso.strip()
+    """Carga y muestra el contenido de la ruta especificada."""
     if not ruta_acceso:
         mostrar_this_pc(texto_salida, listbox, entrada_ruta, agregar_al_historial)
         return
@@ -212,6 +215,7 @@ def cargar_ruta(ruta_acceso, entrada_ruta, texto_salida, listbox, agregar_al_his
 
 def regresar_ruta_anterior(entrada_ruta, texto_salida, listbox):
     global ruta_historial
+    """Regresa a la ruta anterior en el historial."""
     if not ruta_historial:
         messagebox.showinfo("Historial vacío", "No hay rutas anteriores para regresar.")
         return
@@ -244,6 +248,7 @@ def seleccionar_elementos(listbox, entrada_ruta):
 
 def abrir_elemento_from_list(listbox, entrada_ruta, texto_salida):
     elementos = seleccionar_elementos(listbox, entrada_ruta)
+    """Abre un solo elemento seleccionado desde el listbox."""
     if len(elementos) != 1:
         messagebox.showwarning("Selecciona uno", "Selecciona un solo elemento para abrir.")
         return
@@ -252,6 +257,7 @@ def abrir_elemento_from_list(listbox, entrada_ruta, texto_salida):
 
 def renombrar_elemento_from_list(listbox, entrada_ruta, texto_salida):
     elementos = seleccionar_elementos(listbox, entrada_ruta)
+    """Renombra un solo elemento seleccionado."""
     if len(elementos) != 1:
         messagebox.showwarning("Selecciona uno", "Selecciona un solo elemento para renombrar.")
         return
@@ -260,6 +266,7 @@ def renombrar_elemento_from_list(listbox, entrada_ruta, texto_salida):
 
 def eliminar_elementos(listbox, entrada_ruta, texto_salida):
     elementos = seleccionar_elementos(listbox, entrada_ruta)
+    """Elimina los elementos seleccionados, confirmando antes la acción."""
     if not elementos:
         return
 
@@ -296,6 +303,7 @@ def eliminar_elementos(listbox, entrada_ruta, texto_salida):
 def copiar_elementos(listbox, entrada_ruta):
     global copy_buffer, clipboard_action
     elementos = seleccionar_elementos(listbox, entrada_ruta)
+    """Copia los elementos seleccionados para pegarlos en otra ubicación."""
     if not elementos:
         return
     copy_buffer = elementos
@@ -306,6 +314,7 @@ def copiar_elementos(listbox, entrada_ruta):
 def cortar_elementos(listbox, entrada_ruta):
     global copy_buffer, clipboard_action
     elementos = seleccionar_elementos(listbox, entrada_ruta)
+    """Corta los elementos seleccionados para moverlos a otra ubicación."""
     if not elementos:
         return
     copy_buffer = elementos
@@ -315,6 +324,7 @@ def cortar_elementos(listbox, entrada_ruta):
 
 def pegar_elemento(entrada_ruta, texto_salida, listbox):
     global copy_buffer, clipboard_action
+    """Pega los elementos copiados o cortados en la ruta actual."""
     if not copy_buffer or not clipboard_action:
         messagebox.showwarning("Portapapeles vacío", "Primero copia o corta elementos.")
         return
@@ -366,6 +376,40 @@ def pegar_elemento(entrada_ruta, texto_salida, listbox):
 
     if os.path.exists(destino):
         listar_archivos(destino, texto_salida, listbox)
+
+
+def crear_carpeta(entrada_ruta, texto_salida, listbox):
+    ruta_actual = entrada_ruta.get().strip()
+    """Crea una nueva carpeta en la ruta actual."""
+    if ruta_actual == MOSTRAR_PC:
+        messagebox.showwarning("Ubicación inválida", "No puedes crear carpetas en This PC. Selecciona una unidad primero.")
+        return
+    
+    if not ruta_actual or not os.path.exists(ruta_actual):
+        messagebox.showerror("Ruta inválida", "Ingresa una ruta válida primero.")
+        return
+    
+    nombre_carpeta = simpledialog.askstring("Crear Carpeta", "Ingresa el nombre de la nueva carpeta:")
+    if not nombre_carpeta:
+        return
+    
+    nombre_carpeta = nombre_carpeta.strip()
+    if not nombre_carpeta:
+        messagebox.showwarning("Nombre vacío", "El nombre de la carpeta no puede estar vacío.")
+        return
+    
+    ruta_nueva = os.path.join(ruta_actual, nombre_carpeta)
+    
+    if os.path.exists(ruta_nueva):
+        messagebox.showerror("Ya existe", f"La carpeta '{nombre_carpeta}' ya existe.")
+        return
+    
+    try:
+        os.makedirs(ruta_nueva, exist_ok=True)
+        messagebox.showinfo("Éxito", f"Carpeta '{nombre_carpeta}' creada exitosamente.")
+        listar_archivos(ruta_actual, texto_salida, listbox)
+    except Exception as e:
+        messagebox.showerror("Error al crear", f"No se pudo crear la carpeta: {str(e)}")
 
 
 def abrir_elemento(ruta, entrada_ruta, texto_salida, listbox=None):
@@ -479,6 +523,7 @@ def eliminar_elemento(ruta, entrada_ruta, texto_salida, listbox=None):
 
 
 if __name__ == "__main__":
+    """Función principal que inicia la interfaz gráfica"""
     ventana = tk.Tk()
     ventana.title("Organizador de Archivos")
     ventana.geometry("660x750")
@@ -500,6 +545,7 @@ if __name__ == "__main__":
     boton_frame.pack(pady=14)
 
     boton_listar = tk.Button(
+        #Botón para listar el contenido de la carpeta actual
         boton_frame,
         text="Listar carpeta",
         font=("Segoe UI", 10, "bold"),
@@ -513,6 +559,7 @@ if __name__ == "__main__":
     boton_listar.grid(row=0, column=0, padx=6)
 
     boton_this_pc = tk.Button(
+        #Botón para mostrar las unidades de disco disponibles
         boton_frame,
         text="This PC",
         font=("Segoe UI", 10, "bold"),
@@ -526,6 +573,7 @@ if __name__ == "__main__":
     boton_this_pc.grid(row=0, column=3, padx=6)
 
     boton_buscar = tk.Button(
+        #Botón para buscar
         boton_frame,
         text="Buscar por nombre",
         font=("Segoe UI", 10, "bold"),
@@ -539,6 +587,7 @@ if __name__ == "__main__":
     boton_buscar.grid(row=0, column=1, padx=6)
 
     boton_atras = tk.Button(
+        #Botón para regresar a la ruta anterior
         boton_frame,
         text="Atrás",
         font=("Segoe UI", 10, "bold"),
@@ -551,28 +600,35 @@ if __name__ == "__main__":
     )
     boton_atras.grid(row=0, column=2, padx=6)
 
+    #Barra de progreso para mostrar el avance de la búsqueda
     barra_progreso = ttk.Progressbar(ventana, mode='determinate', length=600)
     barra_progreso.pack(padx=20, pady=(10, 8), fill=tk.X)
 
+    #Etiqueta para mostrar el contenido de la carpeta
     etiqueta_contenido = tk.Label(ventana, text="Contenido de la carpeta:", font=("Segoe UI", 11))
     etiqueta_contenido.pack(pady=(10, 4), padx=20, anchor="w")
 
+    #listbox para mostrar los archivos y carpetas encontrados
     listbox_frame = tk.Frame(ventana)
     listbox_frame.pack(padx=20, fill=tk.BOTH, expand=False)
 
     listbox = tk.Listbox(listbox_frame, selectmode=tk.EXTENDED, width=80, height=12, font=("Segoe UI", 10))
     listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+    #Scrollbar para el listbox
     scrollbar_list = tk.Scrollbar(listbox_frame, command=listbox.yview)
     scrollbar_list.pack(side=tk.RIGHT, fill=tk.Y)
     listbox.config(yscrollcommand=scrollbar_list.set)
 
+    #Etiqueta de información sobre la selección múltiple
     info_label = tk.Label(ventana, text="Usa Ctrl o Shift para seleccionar varios elementos.", font=("Segoe UI", 9), fg="#555")
     info_label.pack(padx=20, anchor="w")
 
+    #Frame para los botones de acciones (abrir, renombrar, eliminar, copiar, cortar, pegar, nueva carpeta)
     acciones_frame = tk.Frame(ventana)
     acciones_frame.pack(pady=10)
 
+    """Botones de acciones"""
     boton_abrir = tk.Button(
         acciones_frame,
         text="Abrir",
@@ -651,15 +707,32 @@ if __name__ == "__main__":
     )
     boton_pegar.grid(row=1, column=2, padx=4, pady=4)
 
-    listbox.bind('<Double-Button-1>', lambda event: abrir_elemento_from_list(listbox, entrada_ruta, texto_salida))
+    boton_crear = tk.Button(
+        acciones_frame,
+        text="Nueva Carpeta",
+        font=("Segoe UI", 10),
+        command=lambda: crear_carpeta(entrada_ruta, texto_salida, listbox),
+        bg="#00BCD4",
+        fg="white",
+        activebackground="#0097A7",
+        padx=12,
+        pady=6,
+    )
+    boton_crear.grid(row=2, column=0, padx=4, pady=4)
 
+    #Permite abrir un elemento con doble clic en el listbox
+    listbox.bind('<Double-Button-1>', lambda event: abrir_elemento_from_list(listbox, entrada_ruta, texto_salida))
+    
+    #Etiqueta para mostrar los resultados de la búsqueda o mensajes de estado
     texto_salida = tk.Text(ventana, width=78, height=14, font=("Consolas", 10), state="disabled", wrap="word")
     texto_salida.pack(padx=20, pady=(0, 10))
 
+    #Scrollbar para el texto de salida
     scrollbar = tk.Scrollbar(ventana, command=texto_salida.yview)
     texto_salida.config(yscrollcommand=scrollbar.set)
     scrollbar.place(relx=0.975, rely=0.28, relheight=0.56)
 
+    #Cargar la ruta inicial al iniciar la aplicación
     mostrar_this_pc(texto_salida, listbox, entrada_ruta, agregar_al_historial=False)
 
     ventana.mainloop()
