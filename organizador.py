@@ -140,12 +140,38 @@ def buscar_por_nombre(ruta_acceso, termino, texto_salida, barra_progreso):
     monitorear_cola(ventana, cola_actualizacion, cola_resultados, barra_progreso, texto_salida, hilo)
 
 
-def abrir_elemento(ruta):
-    """Placeholder para abrir un archivo o carpeta."""
+def abrir_elemento(ruta, entrada_ruta, texto_salida):
+    """Abre una carpeta en la interfaz, si es archivo, en la app predeterminada."""
     if not ruta:
         messagebox.showwarning("Ruta vacía", "Ingresa la ruta del elemento a abrir.")
         return
-    messagebox.showinfo("Función pendiente", f"Abrir: {ruta}")
+    
+    # Si la ruta es relativa, combinarla con la ruta base
+    if not os.path.isabs(ruta):
+        ruta_base = entrada_ruta.get().strip()
+        ruta_completa = os.path.join(ruta_base, ruta) if ruta_base else ruta
+    else:
+        ruta_completa = ruta
+    
+    # Convertir a ruta absoluta si aún no lo es
+    ruta_completa = os.path.abspath(ruta_completa)
+    
+    if not os.path.exists(ruta_completa):
+        messagebox.showerror("Ruta no encontrada", f"La ruta '{ruta_completa}' no existe.")
+        return
+    
+    try:
+        # Si es una carpeta, cargarla en la interfaz
+        if os.path.isdir(ruta_completa):
+            entrada_ruta.delete(0, tk.END)
+            entrada_ruta.insert(0, ruta_completa)
+            listar_archivos(ruta_completa, texto_salida)
+        else:
+            # Si es un archivo, abrirlo con la aplicación predeterminada
+            os.startfile(ruta_completa)
+            messagebox.showinfo("Éxito", f"Abriendo archivo: {ruta_completa}")
+    except Exception as e:
+        messagebox.showerror("Error al abrir", f"No se pudo abrir el elemento: {str(e)}")
 
 
 def renombrar_elemento(ruta):
@@ -251,7 +277,7 @@ if __name__ == "__main__":
         acciones_frame,
         text="Abrir",
         font=("Segoe UI", 10),
-        command=lambda: abrir_elemento(entrada_seleccion.get().strip()),
+        command=lambda: abrir_elemento(entrada_seleccion.get().strip(), entrada_ruta, texto_salida),
         bg="#607D8B",
         fg="white",
         activebackground="#546E7A",
