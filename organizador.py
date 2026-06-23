@@ -140,10 +140,58 @@ def buscar_por_nombre(ruta_acceso, termino, texto_salida, barra_progreso):
     monitorear_cola(ventana, cola_actualizacion, cola_resultados, barra_progreso, texto_salida, hilo)
 
 
+def abrir_elemento(ruta):
+    """Placeholder para abrir un archivo o carpeta."""
+    if not ruta:
+        messagebox.showwarning("Ruta vacía", "Ingresa la ruta del elemento a abrir.")
+        return
+    messagebox.showinfo("Función pendiente", f"Abrir: {ruta}")
+
+
+def renombrar_elemento(ruta):
+    """Placeholder para renombrar un archivo o carpeta."""
+    if not ruta:
+        messagebox.showwarning("Ruta vacía", "Ingresa la ruta del elemento a renombrar.")
+        return
+    messagebox.showinfo("Función pendiente", f"Renombrar: {ruta}")
+
+
+def eliminar_elemento(ruta):
+    """Placeholder para eliminar un archivo o carpeta."""
+    if not ruta:
+        messagebox.showwarning("Ruta vacía", "Ingresa la ruta del elemento a eliminar.")
+        return
+    messagebox.showinfo("Función pendiente", f"Eliminar: {ruta}")
+
+
+def copiar_elemento(ruta):
+    """Placeholder para copiar un archivo o carpeta."""
+    if not ruta:
+        messagebox.showwarning("Ruta vacía", "Ingresa la ruta del elemento a copiar.")
+        return
+    messagebox.showinfo("Función pendiente", f"Copiar: {ruta}")
+
+
+def cortar_elemento(ruta):
+    """Placeholder para cortar un archivo o carpeta."""
+    if not ruta:
+        messagebox.showwarning("Ruta vacía", "Ingresa la ruta del elemento a cortar.")
+        return
+    messagebox.showinfo("Función pendiente", f"Cortar: {ruta}")
+
+
+def pegar_elemento(ruta):
+    """Placeholder para pegar el elemento copiado o cortado."""
+    if not ruta:
+        messagebox.showwarning("Ruta vacía", "Ingresa la ruta de destino para pegar.")
+        return
+    messagebox.showinfo("Función pendiente", f"Pegar en: {ruta}")
+
+
 if __name__ == "__main__":
     ventana = tk.Tk()
     ventana.title("Organizador de Archivos")
-    ventana.geometry("660x500")
+    ventana.geometry("660x750")
     ventana.resizable(False, False)
 
     etiqueta_ruta = tk.Label(ventana, text="Ruta de acceso:", font=("Segoe UI", 11))
@@ -189,6 +237,93 @@ if __name__ == "__main__":
 
     barra_progreso = ttk.Progressbar(ventana, mode='determinate', length=600)
     barra_progreso.pack(padx=20, pady=(10, 8), fill=tk.X)
+
+    etiqueta_seleccion = tk.Label(ventana, text="Ruta seleccionada:", font=("Segoe UI", 11))
+    etiqueta_seleccion.pack(pady=(10, 4), padx=20, anchor="w")
+
+    entrada_seleccion = tk.Entry(ventana, width=80, font=("Segoe UI", 10))
+    entrada_seleccion.pack(padx=20)
+
+    acciones_frame = tk.Frame(ventana)
+    acciones_frame.pack(pady=10)
+
+    boton_abrir = tk.Button(
+        acciones_frame,
+        text="Abrir",
+        font=("Segoe UI", 10),
+        command=lambda: abrir_elemento(entrada_seleccion.get().strip()),
+        bg="#607D8B",
+        fg="white",
+        activebackground="#546E7A",
+        padx=12,
+        pady=6,
+    )
+    boton_abrir.grid(row=0, column=0, padx=4, pady=4)
+
+    boton_renombrar = tk.Button(
+        acciones_frame,
+        text="Renombrar",
+        font=("Segoe UI", 10),
+        command=lambda: renombrar_elemento(entrada_seleccion.get().strip()),
+        bg="#795548",
+        fg="white",
+        activebackground="#6D4C41",
+        padx=12,
+        pady=6,
+    )
+    boton_renombrar.grid(row=0, column=1, padx=4, pady=4)
+
+    boton_eliminar = tk.Button(
+        acciones_frame,
+        text="Eliminar",
+        font=("Segoe UI", 10),
+        command=lambda: eliminar_elemento(entrada_seleccion.get().strip()),
+        bg="#D32F2F",
+        fg="white",
+        activebackground="#C62828",
+        padx=12,
+        pady=6,
+    )
+    boton_eliminar.grid(row=0, column=2, padx=4, pady=4)
+
+    boton_copiar = tk.Button(
+        acciones_frame,
+        text="Copiar",
+        font=("Segoe UI", 10),
+        command=lambda: copiar_elemento(entrada_seleccion.get().strip()),
+        bg="#1976D2",
+        fg="white",
+        activebackground="#1565C0",
+        padx=12,
+        pady=6,
+    )
+    boton_copiar.grid(row=1, column=0, padx=4, pady=4)
+
+    boton_cortar = tk.Button(
+        acciones_frame,
+        text="Cortar",
+        font=("Segoe UI", 10),
+        command=lambda: cortar_elemento(entrada_seleccion.get().strip()),
+        bg="#FBC02D",
+        fg="black",
+        activebackground="#F9A825",
+        padx=12,
+        pady=6,
+    )
+    boton_cortar.grid(row=1, column=1, padx=4, pady=4)
+
+    boton_pegar = tk.Button(
+        acciones_frame,
+        text="Pegar",
+        font=("Segoe UI", 10),
+        command=lambda: pegar_elemento(entrada_seleccion.get().strip()),
+        bg="#388E3C",
+        fg="white",
+        activebackground="#2E7D32",
+        padx=12,
+        pady=6,
+    )
+    boton_pegar.grid(row=1, column=2, padx=4, pady=4)
 
     texto_salida = tk.Text(ventana, width=78, height=14, font=("Consolas", 10), state="disabled", wrap="word")
     texto_salida.pack(padx=20, pady=(0, 10))
