@@ -1,0 +1,5 @@
+# PyNav-OS - Requerimientos
+# Este proyecto utiliza únicamente la biblioteca estándar de Python 3.x.
+# No se requieren dependencias externas de terceros (pip).
+
+python>=3.8
