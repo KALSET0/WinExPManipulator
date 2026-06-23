@@ -1,7 +1,7 @@
 import os
 import re
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox, ttk, simpledialog
 import threading
 from queue import Queue
 
@@ -174,12 +174,45 @@ def abrir_elemento(ruta, entrada_ruta, texto_salida):
         messagebox.showerror("Error al abrir", f"No se pudo abrir el elemento: {str(e)}")
 
 
-def renombrar_elemento(ruta):
-    """Placeholder para renombrar un archivo o carpeta."""
+def renombrar_elemento(ruta, entrada_ruta, texto_salida):
+    """Renombra un archivo o carpeta dentro de la ruta base actual."""
     if not ruta:
         messagebox.showwarning("Ruta vacía", "Ingresa la ruta del elemento a renombrar.")
         return
-    messagebox.showinfo("Función pendiente", f"Renombrar: {ruta}")
+
+    if not os.path.isabs(ruta):
+        ruta_base = entrada_ruta.get().strip()
+        ruta_completa = os.path.join(ruta_base, ruta) if ruta_base else ruta
+    else:
+        ruta_completa = ruta
+
+    ruta_completa = os.path.abspath(ruta_completa)
+
+    if not os.path.exists(ruta_completa):
+        messagebox.showerror("Ruta no encontrada", f"La ruta '{ruta_completa}' no existe.")
+        return
+
+    nuevo_nombre = simpledialog.askstring("Renombrar", "Ingresa el nuevo nombre:", initialvalue=os.path.basename(ruta_completa))
+    if not nuevo_nombre:
+        return
+
+    if nuevo_nombre == os.path.basename(ruta_completa):
+        return
+
+    nueva_ruta = os.path.join(os.path.dirname(ruta_completa), nuevo_nombre)
+    if os.path.exists(nueva_ruta):
+        messagebox.showerror("Nombre duplicado", f"Ya existe un elemento llamado '{nuevo_nombre}'.")
+        return
+
+    try:
+        os.rename(ruta_completa, nueva_ruta)
+        messagebox.showinfo("Éxito", f"Renombrado a: {nuevo_nombre}")
+        carpeta_actual = os.path.dirname(ruta_completa)
+        entrada_ruta.delete(0, tk.END)
+        entrada_ruta.insert(0, carpeta_actual)
+        listar_archivos(carpeta_actual, texto_salida)
+    except Exception as e:
+        messagebox.showerror("Error al renombrar", f"No se pudo renombrar: {str(e)}")
 
 
 def eliminar_elemento(ruta):
@@ -290,7 +323,7 @@ if __name__ == "__main__":
         acciones_frame,
         text="Renombrar",
         font=("Segoe UI", 10),
-        command=lambda: renombrar_elemento(entrada_seleccion.get().strip()),
+        command=lambda: renombrar_elemento(entrada_seleccion.get().strip(), entrada_ruta, texto_salida),
         bg="#795548",
         fg="white",
         activebackground="#6D4C41",
