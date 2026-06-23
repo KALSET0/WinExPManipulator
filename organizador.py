@@ -9,6 +9,7 @@ from queue import Queue
 copy_buffer = []
 clipboard_action = None
 ruta_historial = []
+MOSTRAR_PC = "This PC"
 
 
 def buscar_en_hilo(ruta_acceso, termino, cola_actualizacion, cola_resultados):
@@ -152,10 +153,48 @@ def buscar_por_nombre(ruta_acceso, termino, texto_salida, barra_progreso):
     monitorear_cola(ventana, cola_actualizacion, cola_resultados, barra_progreso, texto_salida, hilo)
 
 
+def obtener_unidades_windows():
+    try:
+        import string
+        drives = []
+        bitmask = __import__('ctypes').windll.kernel32.GetLogicalDrives()
+        for i in range(26):
+            if bitmask & (1 << i):
+                letra = f"{string.ascii_uppercase[i]}:\\"
+                drives.append(letra)
+        return drives
+    except Exception:
+        return []
+
+
+def mostrar_this_pc(texto_salida, listbox, entrada_ruta, agregar_al_historial=True):
+    global ruta_historial
+    if agregar_al_historial:
+        ruta_actual = entrada_ruta.get().strip()
+        if ruta_actual and ruta_actual != MOSTRAR_PC and os.path.exists(ruta_actual):
+            ruta_historial.append(ruta_actual)
+
+    entrada_ruta.delete(0, tk.END)
+    entrada_ruta.insert(0, MOSTRAR_PC)
+
+    texto_salida.config(state="normal")
+    texto_salida.delete("1.0", tk.END)
+    texto_salida.insert(tk.END, "--- This PC ---\n")
+    texto_salida.config(state="disabled")
+
+    listbox.delete(0, tk.END)
+    for unidad in obtener_unidades_windows():
+        listbox.insert(tk.END, unidad)
+
+
 def cargar_ruta(ruta_acceso, entrada_ruta, texto_salida, listbox, agregar_al_historial=True):
     ruta_acceso = ruta_acceso.strip()
     if not ruta_acceso:
-        messagebox.showwarning("Ruta vacía", "Ingresa una ruta válida para cargar.")
+        mostrar_this_pc(texto_salida, listbox, entrada_ruta, agregar_al_historial)
+        return
+
+    if ruta_acceso == MOSTRAR_PC:
+        mostrar_this_pc(texto_salida, listbox, entrada_ruta, agregar_al_historial)
         return
 
     if not os.path.exists(ruta_acceso):
@@ -193,9 +232,11 @@ def seleccionar_elementos(listbox, entrada_ruta):
     ruta_base = entrada_ruta.get().strip()
     rutas = []
     for i in indices:
-        elemento = listbox.get(i)
+        elemento = listbox.get(i).strip()
         if os.path.isabs(elemento):
             rutas.append(os.path.abspath(elemento))
+        elif ruta_base == MOSTRAR_PC:
+            rutas.append(elemento)
         else:
             rutas.append(os.path.abspath(os.path.join(ruta_base, elemento)))
     return rutas
@@ -471,6 +512,19 @@ if __name__ == "__main__":
     )
     boton_listar.grid(row=0, column=0, padx=6)
 
+    boton_this_pc = tk.Button(
+        boton_frame,
+        text="This PC",
+        font=("Segoe UI", 10, "bold"),
+        command=lambda: mostrar_this_pc(texto_salida, listbox, entrada_ruta),
+        bg="#8E44AD",
+        fg="white",
+        activebackground="#6C3483",
+        padx=14,
+        pady=8,
+    )
+    boton_this_pc.grid(row=0, column=3, padx=6)
+
     boton_buscar = tk.Button(
         boton_frame,
         text="Buscar por nombre",
@@ -605,6 +659,8 @@ if __name__ == "__main__":
     scrollbar = tk.Scrollbar(ventana, command=texto_salida.yview)
     texto_salida.config(yscrollcommand=scrollbar.set)
     scrollbar.place(relx=0.975, rely=0.28, relheight=0.56)
+
+    mostrar_this_pc(texto_salida, listbox, entrada_ruta, agregar_al_historial=False)
 
     ventana.mainloop()
 
