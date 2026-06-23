@@ -1,4 +1,5 @@
 import os
+import re
 import tkinter as tk
 from tkinter import messagebox, ttk
 import threading
@@ -23,7 +24,10 @@ def buscar_en_hilo(ruta_acceso, termino, cola_actualizacion, cola_resultados):
                 contador += 1
                 cola_actualizacion.put(("progreso", contador))
 
-                if termino in nombre.lower():
+                nombre_minusculas = nombre.lower()
+                # Sí permite un pequeño prefijo y sufijo, pero rechaza palabras muy largas.
+                termino_regex = re.escape(termino)
+                if re.search(rf"(?:(?<![a-z0-9])[a-z0-9]{{0,3}}){termino_regex}[a-z0-9]{{0,5}}(?![a-z0-9])", nombre_minusculas):
                     ruta_relativa = os.path.relpath(os.path.join(raiz, nombre), ruta_acceso)
                     tipo = "Carpeta" if nombre in dirs else "Archivo"
                     coincidencias.append((tipo, ruta_relativa))
