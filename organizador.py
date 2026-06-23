@@ -6,6 +6,9 @@ from tkinter import messagebox, ttk, simpledialog
 import threading
 from queue import Queue
 
+copy_buffer = []
+clipboard_action = None
+
 
 def buscar_en_hilo(ruta_acceso, termino, cola_actualizacion, cola_resultados):
     """Ejecuta la búsqueda en un hilo secundario."""
@@ -77,14 +80,17 @@ def monitorear_cola(ventana, cola_actualizacion, cola_resultados, barra_progreso
             barra_progreso['value'] = barra_progreso['maximum']
 
 
-def listar_archivos(ruta_acceso, texto_salida):
+def listar_archivos(ruta_acceso, texto_salida, listbox=None):
     """Función que lee y muestra los archivos dentro de una ruta específica."""
+    if listbox is not None:
+        listbox.delete(0, tk.END)
+
     texto_salida.config(state="normal")
     texto_salida.delete("1.0", tk.END)
 
     if os.path.exists(ruta_acceso):
         texto_salida.insert(tk.END, f"✅ Conexión exitosa. Leyendo la ruta...: {ruta_acceso}\n\n")
-        elementos = os.listdir(ruta_acceso)
+        elementos = sorted(os.listdir(ruta_acceso))
 
         if not elementos:
             texto_salida.insert(tk.END, "⚠️ La carpeta está vacía.\n")
@@ -92,7 +98,11 @@ def listar_archivos(ruta_acceso, texto_salida):
             texto_salida.insert(tk.END, "--- Archivos encontrados ---\n")
             for elemento in elementos:
                 texto_salida.insert(tk.END, f"- {elemento}\n")
+                if listbox is not None:
+                    listbox.insert(tk.END, elemento)
     else:
+        if listbox is not None:
+            listbox.delete(0, tk.END)
         messagebox.showerror("Error de ruta", f"La ruta '{ruta_acceso}' no existe. Verifica que esté bien escrita.")
 
     texto_salida.config(state="disabled")
@@ -141,7 +151,151 @@ def buscar_por_nombre(ruta_acceso, termino, texto_salida, barra_progreso):
     monitorear_cola(ventana, cola_actualizacion, cola_resultados, barra_progreso, texto_salida, hilo)
 
 
-def abrir_elemento(ruta, entrada_ruta, texto_salida):
+def seleccionar_elementos(listbox, entrada_ruta):
+    """Devuelve rutas absolutas seleccionadas en el listbox."""
+    indices = listbox.curselection()
+    if not indices:
+        messagebox.showwarning("Selección vacía", "Selecciona al menos un elemento en la lista.")
+        return []
+
+    ruta_base = entrada_ruta.get().strip()
+    rutas = []
+    for i in indices:
+        elemento = listbox.get(i)
+        if os.path.isabs(elemento):
+            rutas.append(os.path.abspath(elemento))
+        else:
+            rutas.append(os.path.abspath(os.path.join(ruta_base, elemento)))
+    return rutas
+
+
+def abrir_elemento_from_list(listbox, entrada_ruta, texto_salida):
+    elementos = seleccionar_elementos(listbox, entrada_ruta)
+    if len(elementos) != 1:
+        messagebox.showwarning("Selecciona uno", "Selecciona un solo elemento para abrir.")
+        return
+    abrir_elemento(elementos[0], entrada_ruta, texto_salida, listbox)
+
+
+def renombrar_elemento_from_list(listbox, entrada_ruta, texto_salida):
+    elementos = seleccionar_elementos(listbox, entrada_ruta)
+    if len(elementos) != 1:
+        messagebox.showwarning("Selecciona uno", "Selecciona un solo elemento para renombrar.")
+        return
+    renombrar_elemento(elementos[0], entrada_ruta, texto_salida)
+
+
+def eliminar_elementos(listbox, entrada_ruta, texto_salida):
+    elementos = seleccionar_elementos(listbox, entrada_ruta)
+    if not elementos:
+        return
+
+    if len(elementos) == 1:
+        pregunta = f"¿Eliminar '{os.path.basename(elementos[0])}'?"
+    else:
+        pregunta = f"¿Eliminar {len(elementos)} elementos seleccionados?"
+
+    if not messagebox.askyesno("Confirmar eliminación", pregunta):
+        return
+
+    errores = []
+    eliminados = 0
+    for ruta in elementos:
+        try:
+            if os.path.isdir(ruta):
+                shutil.rmtree(ruta)
+            else:
+                os.remove(ruta)
+            eliminados += 1
+        except Exception as e:
+            errores.append(f"{os.path.basename(ruta)}: {str(e)}")
+
+    if eliminados:
+        messagebox.showinfo("Éxito", f"Eliminados {eliminados} elemento(s).")
+    if errores:
+        messagebox.showerror("Errores al eliminar", "\n".join(errores))
+
+    carpeta_actual = entrada_ruta.get().strip()
+    if os.path.exists(carpeta_actual):
+        listar_archivos(carpeta_actual, texto_salida, listbox)
+
+
+def copiar_elementos(listbox, entrada_ruta):
+    global copy_buffer, clipboard_action
+    elementos = seleccionar_elementos(listbox, entrada_ruta)
+    if not elementos:
+        return
+    copy_buffer = elementos
+    clipboard_action = "copy"
+    messagebox.showinfo("Copiar", f"{len(elementos)} elemento(s) copiado(s).")
+
+
+def cortar_elementos(listbox, entrada_ruta):
+    global copy_buffer, clipboard_action
+    elementos = seleccionar_elementos(listbox, entrada_ruta)
+    if not elementos:
+        return
+    copy_buffer = elementos
+    clipboard_action = "cut"
+    messagebox.showinfo("Cortar", f"{len(elementos)} elemento(s) listo(s) para mover.")
+
+
+def pegar_elemento(entrada_ruta, texto_salida, listbox):
+    global copy_buffer, clipboard_action
+    if not copy_buffer or not clipboard_action:
+        messagebox.showwarning("Portapapeles vacío", "Primero copia o corta elementos.")
+        return
+
+    destino = simpledialog.askstring("Pegar", "Ingresa la ruta de destino:", initialvalue=entrada_ruta.get().strip())
+    if not destino:
+        return
+
+    if not os.path.isabs(destino):
+        destino = os.path.abspath(os.path.join(entrada_ruta.get().strip(), destino))
+    else:
+        destino = os.path.abspath(destino)
+
+    if not os.path.exists(destino):
+        messagebox.showerror("Destino no existe", f"La ruta destino '{destino}' no existe.")
+        return
+
+    if not os.path.isdir(destino):
+        messagebox.showerror("Destino inválido", "La ruta de destino debe ser una carpeta.")
+        return
+
+    errores = []
+    exitos = 0
+    for ruta in copy_buffer:
+        destino_final = os.path.join(destino, os.path.basename(ruta))
+        if os.path.exists(destino_final):
+            errores.append(f"Ya existe: {os.path.basename(ruta)}")
+            continue
+        try:
+            if clipboard_action == "copy":
+                if os.path.isdir(ruta):
+                    shutil.copytree(ruta, destino_final)
+                else:
+                    shutil.copy2(ruta, destino_final)
+            else:
+                shutil.move(ruta, destino_final)
+            exitos += 1
+        except Exception as e:
+            errores.append(f"{os.path.basename(ruta)}: {str(e)}")
+
+    if exitos:
+        messagebox.showinfo("Pegar", f"{exitos} elemento(s) pegado(s) en {destino}.")
+    if errores:
+        messagebox.showerror("Errores al pegar", "\n".join(errores))
+
+    if clipboard_action == "cut":
+        copy_buffer = []
+        clipboard_action = None
+
+    if os.path.exists(destino):
+        listar_archivos(destino, texto_salida, listbox)
+
+
+def abrir_elemento(ruta, entrada_ruta, texto_salida, listbox=None):
     """Abre una carpeta en la interfaz, si es archivo, en la app predeterminada."""
     if not ruta:
         messagebox.showwarning("Ruta vacía", "Ingresa la ruta del elemento a abrir.")
@@ -166,7 +320,7 @@ def abrir_elemento(ruta, entrada_ruta, texto_salida):
         if os.path.isdir(ruta_completa):
             entrada_ruta.delete(0, tk.END)
             entrada_ruta.insert(0, ruta_completa)
-            listar_archivos(ruta_completa, texto_salida)
+            listar_archivos(ruta_completa, texto_salida, listbox)
         else:
             # Si es un archivo, abrirlo con la aplicación predeterminada
             os.startfile(ruta_completa)
@@ -175,7 +329,7 @@ def abrir_elemento(ruta, entrada_ruta, texto_salida):
         messagebox.showerror("Error al abrir", f"No se pudo abrir el elemento: {str(e)}")
 
 
-def renombrar_elemento(ruta, entrada_ruta, texto_salida):
+def renombrar_elemento(ruta, entrada_ruta, texto_salida, listbox=None):
     """Renombra un archivo o carpeta dentro de la ruta base actual."""
     if not ruta:
         messagebox.showwarning("Ruta vacía", "Ingresa el elemento a renombrar.")
@@ -211,12 +365,12 @@ def renombrar_elemento(ruta, entrada_ruta, texto_salida):
         carpeta_actual = os.path.dirname(ruta_completa)
         entrada_ruta.delete(0, tk.END)
         entrada_ruta.insert(0, carpeta_actual)
-        listar_archivos(carpeta_actual, texto_salida)
+        listar_archivos(carpeta_actual, texto_salida, listbox)
     except Exception as e:
         messagebox.showerror("Error al renombrar", f"No se pudo renombrar: {str(e)}")
 
 
-def eliminar_elemento(ruta, entrada_ruta, texto_salida):
+def eliminar_elemento(ruta, entrada_ruta, texto_salida, listbox=None):
     """Elimina un archivo o carpeta, confirmando antes la acción."""
     if not ruta:
         messagebox.showwarning("Ruta vacía", "Ingresa el elemento a eliminar.")
@@ -248,33 +402,9 @@ def eliminar_elemento(ruta, entrada_ruta, texto_salida):
         carpeta_actual = os.path.dirname(ruta_completa)
         entrada_ruta.delete(0, tk.END)
         entrada_ruta.insert(0, carpeta_actual)
-        listar_archivos(carpeta_actual, texto_salida)
+        listar_archivos(carpeta_actual, texto_salida, listbox)
     except Exception as e:
         messagebox.showerror("Error al eliminar", f"No se pudo eliminar: {str(e)}")
-
-
-def copiar_elemento(ruta):
-    """Placeholder para copiar un archivo o carpeta."""
-    if not ruta:
-        messagebox.showwarning("Ruta vacía", "Ingresa la ruta del elemento a copiar.")
-        return
-    messagebox.showinfo("Función pendiente", f"Copiar: {ruta}")
-
-
-def cortar_elemento(ruta):
-    """Placeholder para cortar un archivo o carpeta."""
-    if not ruta:
-        messagebox.showwarning("Ruta vacía", "Ingresa la ruta del elemento a cortar.")
-        return
-    messagebox.showinfo("Función pendiente", f"Cortar: {ruta}")
-
-
-def pegar_elemento(ruta):
-    """Placeholder para pegar el elemento copiado o cortado."""
-    if not ruta:
-        messagebox.showwarning("Ruta vacía", "Ingresa la ruta de destino para pegar.")
-        return
-    messagebox.showinfo("Función pendiente", f"Pegar en: {ruta}")
 
 
 if __name__ == "__main__":
@@ -302,7 +432,7 @@ if __name__ == "__main__":
         boton_frame,
         text="Listar carpeta",
         font=("Segoe UI", 10, "bold"),
-        command=lambda: listar_archivos(entrada_ruta.get().strip(), texto_salida),
+        command=lambda: listar_archivos(entrada_ruta.get().strip(), texto_salida, listbox),
         bg="#4CAF50",
         fg="white",
         activebackground="#45A049",
@@ -327,11 +457,21 @@ if __name__ == "__main__":
     barra_progreso = ttk.Progressbar(ventana, mode='determinate', length=600)
     barra_progreso.pack(padx=20, pady=(10, 8), fill=tk.X)
 
-    etiqueta_seleccion = tk.Label(ventana, text="Ruta seleccionada:", font=("Segoe UI", 11))
-    etiqueta_seleccion.pack(pady=(10, 4), padx=20, anchor="w")
+    etiqueta_contenido = tk.Label(ventana, text="Contenido de la carpeta:", font=("Segoe UI", 11))
+    etiqueta_contenido.pack(pady=(10, 4), padx=20, anchor="w")
 
-    entrada_seleccion = tk.Entry(ventana, width=80, font=("Segoe UI", 10))
-    entrada_seleccion.pack(padx=20)
+    listbox_frame = tk.Frame(ventana)
+    listbox_frame.pack(padx=20, fill=tk.BOTH, expand=False)
+
+    listbox = tk.Listbox(listbox_frame, selectmode=tk.EXTENDED, width=80, height=12, font=("Segoe UI", 10))
+    listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+
+    scrollbar_list = tk.Scrollbar(listbox_frame, command=listbox.yview)
+    scrollbar_list.pack(side=tk.RIGHT, fill=tk.Y)
+    listbox.config(yscrollcommand=scrollbar_list.set)
+
+    info_label = tk.Label(ventana, text="Usa Ctrl o Shift para seleccionar varios elementos.", font=("Segoe UI", 9), fg="#555")
+    info_label.pack(padx=20, anchor="w")
 
     acciones_frame = tk.Frame(ventana)
     acciones_frame.pack(pady=10)
@@ -340,7 +480,7 @@ if __name__ == "__main__":
         acciones_frame,
         text="Abrir",
         font=("Segoe UI", 10),
-        command=lambda: abrir_elemento(entrada_seleccion.get().strip(), entrada_ruta, texto_salida),
+        command=lambda: abrir_elemento_from_list(listbox, entrada_ruta, texto_salida),
         bg="#607D8B",
         fg="white",
         activebackground="#546E7A",
@@ -353,7 +493,7 @@ if __name__ == "__main__":
         acciones_frame,
         text="Renombrar",
         font=("Segoe UI", 10),
-        command=lambda: renombrar_elemento(entrada_seleccion.get().strip(), entrada_ruta, texto_salida),
+        command=lambda: renombrar_elemento_from_list(listbox, entrada_ruta, texto_salida),
         bg="#795548",
         fg="white",
         activebackground="#6D4C41",
@@ -366,7 +506,7 @@ if __name__ == "__main__":
         acciones_frame,
         text="Eliminar",
         font=("Segoe UI", 10),
-        command=lambda: eliminar_elemento(entrada_seleccion.get().strip(), entrada_ruta, texto_salida),
+        command=lambda: eliminar_elementos(listbox, entrada_ruta, texto_salida),
         bg="#D32F2F",
         fg="white",
         activebackground="#C62828",
@@ -379,7 +519,7 @@ if __name__ == "__main__":
         acciones_frame,
         text="Copiar",
         font=("Segoe UI", 10),
-        command=lambda: copiar_elemento(entrada_seleccion.get().strip()),
+        command=lambda: copiar_elementos(listbox, entrada_ruta),
         bg="#1976D2",
         fg="white",
         activebackground="#1565C0",
@@ -392,7 +532,7 @@ if __name__ == "__main__":
         acciones_frame,
         text="Cortar",
         font=("Segoe UI", 10),
-        command=lambda: cortar_elemento(entrada_seleccion.get().strip()),
+        command=lambda: cortar_elementos(listbox, entrada_ruta),
         bg="#FBC02D",
         fg="black",
         activebackground="#F9A825",
@@ -405,7 +545,7 @@ if __name__ == "__main__":
         acciones_frame,
         text="Pegar",
         font=("Segoe UI", 10),
-        command=lambda: pegar_elemento(entrada_seleccion.get().strip()),
+        command=lambda: pegar_elemento(entrada_ruta, texto_salida, listbox),
         bg="#388E3C",
         fg="white",
         activebackground="#2E7D32",
@@ -413,6 +553,8 @@ if __name__ == "__main__":
         pady=6,
     )
     boton_pegar.grid(row=1, column=2, padx=4, pady=4)
+
+    listbox.bind('<Double-Button-1>', lambda event: abrir_elemento_from_list(listbox, entrada_ruta, texto_salida))
 
     texto_salida = tk.Text(ventana, width=78, height=14, font=("Consolas", 10), state="disabled", wrap="word")
     texto_salida.pack(padx=20, pady=(0, 10))
