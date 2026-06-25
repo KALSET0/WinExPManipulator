@@ -153,6 +153,13 @@ def buscar_por_nombre(ruta_acceso, termino, texto_salida, barra_progreso):
     ventana = texto_salida.winfo_toplevel()
     monitorear_cola(ventana, cola_actualizacion, cola_resultados, barra_progreso, texto_salida, hilo)
 
+def obtener_archivos_locales():
+    """Obtener la ruta de archivos locales del programa."""
+    try:
+        ruta_programa = os.path.dirname(os.path.abspath(__file__))
+        return ruta_programa
+    except Exception:
+        return ""
 
 def obtener_unidades_windows():
     """Obtiene las unidades de disco disponibles."""
