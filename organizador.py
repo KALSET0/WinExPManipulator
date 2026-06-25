@@ -175,9 +175,8 @@ def mostrar_archivos_locales(texto_salida, listbox, entrada_ruta, ruta_historial
     if ruta_historial:
         actualizar_historial(entrada_ruta, "Carpeta Local")
 
-    archivo_actual = obtener_archivos_locales()
-    carpeta_local = os.path.dirname(archivo_actual)
-
+    carpeta_local = obtener_archivos_locales()
+    
     entrada_ruta.delete(0, tk.END)
     entrada_ruta.insert(0, carpeta_local)
 
@@ -597,6 +596,7 @@ if __name__ == "__main__":
         pady=8,
     )
     boton_listar.grid(row=0, column=0, padx=6)
+
     boton_archivos_locales = tk.Button(
         #Botón para mostrar los archivos de la carpeta local
         boton_frame,
