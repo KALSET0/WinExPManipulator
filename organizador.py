@@ -153,6 +153,15 @@ def buscar_por_nombre(ruta_acceso, termino, texto_salida, barra_progreso):
     ventana = texto_salida.winfo_toplevel()
     monitorear_cola(ventana, cola_actualizacion, cola_resultados, barra_progreso, texto_salida, hilo)
 
+def actualizar_historial(entrada_ruta, texto_a_ignorar):
+    global ruta_historial
+    """Guarda de forma segura la ruta actual en el historial global."""
+    ruta_actual = entrada_ruta.get().strip()
+    
+    # Comprobamos que exista, que no esté vacía y que no sea el texto a ignorar
+    if ruta_actual and ruta_actual != texto_a_ignorar and os.path.exists(ruta_actual):
+        ruta_historial.append(ruta_actual)
+
 def obtener_archivos_locales():
     """Obtener la ruta de archivos locales del programa."""
     try:
@@ -160,6 +169,19 @@ def obtener_archivos_locales():
         return ruta_programa
     except Exception:
         return ""
+
+def mostrar_archivos_locales(texto_salida, listbox, entrada_ruta, ruta_historial=True):
+    """Muestra los archivos de la carpeta local."""
+    if ruta_historial:
+        actualizar_historial(entrada_ruta, "Carpeta Local")
+
+    archivo_actual = obtener_archivos_locales()
+    carpeta_local = os.path.dirname(archivo_actual)
+
+    entrada_ruta.delete(0, tk.END)
+    entrada_ruta.insert(0, carpeta_local)
+
+    listar_archivos(carpeta_local, texto_salida, listbox)
 
 def obtener_unidades_windows():
     """Obtiene las unidades de disco disponibles."""
@@ -176,13 +198,10 @@ def obtener_unidades_windows():
         return []
 
 
-def mostrar_this_pc(texto_salida, listbox, entrada_ruta, agregar_al_historial=True):
-    global ruta_historial
+def mostrar_this_pc(texto_salida, listbox, entrada_ruta, ruta_historial=True):
     """Muestra las unidades de disco disponibles en Windows."""
-    if agregar_al_historial:
-        ruta_actual = entrada_ruta.get().strip()
-        if ruta_actual and ruta_actual != MOSTRAR_PC and os.path.exists(ruta_actual):
-            ruta_historial.append(ruta_actual)
+    if ruta_historial:
+        actualizar_historial(entrada_ruta, MOSTRAR_PC)
 
     entrada_ruta.delete(0, tk.END)
     entrada_ruta.insert(0, MOSTRAR_PC)
@@ -197,15 +216,15 @@ def mostrar_this_pc(texto_salida, listbox, entrada_ruta, agregar_al_historial=Tr
         listbox.insert(tk.END, unidad)
 
 
-def cargar_ruta(ruta_acceso, entrada_ruta, texto_salida, listbox, agregar_al_historial=True):
-    ruta_acceso = ruta_acceso.strip()
+def cargar_ruta(ruta_acceso, entrada_ruta, texto_salida, listbox, ruta_historial=True):
     """Carga y muestra el contenido de la ruta especificada."""
+    ruta_acceso = ruta_acceso.strip()
     if not ruta_acceso:
-        mostrar_this_pc(texto_salida, listbox, entrada_ruta, agregar_al_historial)
+        mostrar_this_pc(texto_salida, listbox, entrada_ruta, ruta_historial)
         return
 
     if ruta_acceso == MOSTRAR_PC:
-        mostrar_this_pc(texto_salida, listbox, entrada_ruta, agregar_al_historial)
+        mostrar_this_pc(texto_salida, listbox, entrada_ruta, ruta_historial)
         return
 
     if not os.path.exists(ruta_acceso):
@@ -213,7 +232,7 @@ def cargar_ruta(ruta_acceso, entrada_ruta, texto_salida, listbox, agregar_al_his
         return
 
     ruta_actual = entrada_ruta.get().strip()
-    if agregar_al_historial and ruta_actual and ruta_actual != ruta_acceso and os.path.exists(ruta_actual):
+    if ruta_historial and ruta_actual and ruta_actual != ruta_acceso and os.path.exists(ruta_actual):
         ruta_historial.append(ruta_actual)
 
     entrada_ruta.delete(0, tk.END)
@@ -578,6 +597,19 @@ if __name__ == "__main__":
         pady=8,
     )
     boton_listar.grid(row=0, column=0, padx=6)
+    boton_archivos_locales = tk.Button(
+        #Botón para mostrar los archivos de la carpeta local
+        boton_frame,
+        text="Carpeta Local",                         
+        font=("Segoe UI", 10, "bold"),
+        command=lambda: mostrar_archivos_locales(texto_salida, listbox, entrada_ruta),
+        bg="#2E4053",
+        fg="white",
+        activebackground="#212F3D",
+        padx=14,
+        pady=8,
+    )
+    boton_archivos_locales.grid(row=0, column=4, padx=6)
 
     boton_this_pc = tk.Button(
         #Botón para mostrar las unidades de disco disponibles
@@ -754,7 +786,7 @@ if __name__ == "__main__":
     scrollbar.place(relx=0.975, rely=0.28, relheight=0.56)
 
     #Cargar la ruta inicial al iniciar la aplicación
-    mostrar_this_pc(texto_salida, listbox, entrada_ruta, agregar_al_historial=False)
+    mostrar_this_pc(texto_salida, listbox, entrada_ruta, ruta_historial=False)
 
     ventana.mainloop()
 
