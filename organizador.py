@@ -18,7 +18,7 @@ def buscar_en_hilo(ruta_acceso, termino, cola_actualizacion, cola_resultados):
     try:
         # Primera pasada: contar archivos totales
         total_elementos = 0
-        for raiz, dirs, archivos in os.walk(ruta_acceso):
+        for acceso, dirs, archivos in os.walk(ruta_acceso):
             total_elementos += len(dirs) + len(archivos)
 
         cola_actualizacion.put(("total", total_elementos))
@@ -26,7 +26,7 @@ def buscar_en_hilo(ruta_acceso, termino, cola_actualizacion, cola_resultados):
         contador = 0
 
         # Segunda pasada: buscar y actualizar progreso
-        for raiz, dirs, archivos in os.walk(ruta_acceso):
+        for acceso, dirs, archivos in os.walk(ruta_acceso):
             for nombre in dirs + archivos:
                 contador += 1
                 cola_actualizacion.put(("progreso", contador))
@@ -35,7 +35,7 @@ def buscar_en_hilo(ruta_acceso, termino, cola_actualizacion, cola_resultados):
                 # Sí permite un pequeño prefijo y sufijo, pero rechaza palabras muy largas.
                 termino_regex = re.escape(termino)
                 if re.search(rf"(?:(?<![a-z0-9])[a-z0-9]{{0,3}}){termino_regex}[a-z0-9]{{0,5}}(?![a-z0-9])", nombre_minusculas):
-                    ruta_relativa = os.path.relpath(os.path.join(raiz, nombre), ruta_acceso)
+                    ruta_relativa = os.path.relpath(os.path.join(acceso, nombre), ruta_acceso)
                     tipo = "Carpeta" if nombre in dirs else "Archivo"
                     coincidencias.append((tipo, ruta_relativa))
 
@@ -789,4 +789,3 @@ if __name__ == "__main__":
     mostrar_this_pc(texto_salida, listbox, entrada_ruta, ruta_historial=False)
 
     ventana.mainloop()
-
